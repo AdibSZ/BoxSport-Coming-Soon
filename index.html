@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>باکس اسپرت | BOX SPORT</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazirmatn@v33.003/Vazirmatn-font-face.css" rel="stylesheet" type="text/css" />
+    <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-void: #020305;
+            --accent: #00e5ff;
+            --accent-2: #ff6a00;
+            --text-main: #ffffff;
+        }
+
+        [data-mode="forge"] {
+            --accent: #ff6a00;
+            --accent-2: #00e5ff;
+        }
+
+        [data-mode="stealth"] {
+            --accent: #94a3b8;
+            --accent-2: #475569;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html, body {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--bg-void);
+            color: var(--text-main);
+            font-family: 'Vazirmatn', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* لایه پس‌زمینه */
+        .world-backdrop {
+            position: fixed;
+            inset: -80px;
+            z-index: 0;
+            will-change: transform;
+        }
+
+        .ambient-aura {
+            position: absolute;
+            inset: 0;
+            background:
+                radial-gradient(circle at 30% 28%, color-mix(in srgb, var(--accent) 26%, transparent) 0%, transparent 45%),
+                radial-gradient(circle at 72% 72%, color-mix(in srgb, var(--accent-2) 22%, transparent) 0%, transparent 45%),
+                radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--accent) 10%, transparent) 0%, transparent 55%);
+            transition: background 0.8s ease;
+        }
+
+        /* شیارهای فلزی کانتینر در پس‌زمینه */
+        .corrugated-wall {
+            position: absolute;
+            inset: 0;
+            background: 
+                repeating-linear-gradient(
+                    90deg,
+                    rgba(255, 255, 255, 0.04) 0px,
+                    rgba(255, 255, 255, 0.04) 2px,
+                    rgba(0, 0, 0, 0.72) 2px,
+                    rgba(0, 0, 0, 0.72) 26px,
+                    rgba(255, 255, 255, 0.02) 26px,
+                    rgba(255, 255, 255, 0.02) 52px
+                );
+            mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,0.95) 25%, transparent 82%);
+            -webkit-mask-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,0.95) 25%, transparent 82%);
+        }
+
+        /* گوی‌های نوری پشت شیشه دودی */
+        .liquid-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(32px);
+            opacity: 0.48;
+            transition: background 0.8s ease;
+        }
+        .orb-1 {
+            width: 260px;
+            height: 260px;
+            top: 26%;
+            left: 30%;
+            background: radial-gradient(circle, var(--accent), transparent 70%);
+            animation: floatOrb1 9s ease-in-out infinite alternate;
+        }
+        .orb-2 {
+            width: 240px;
+            height: 240px;
+            bottom: 24%;
+            right: 28%;
+            background: radial-gradient(circle, var(--accent-2), transparent 70%);
+            animation: floatOrb2 11s ease-in-out infinite alternate;
+        }
+
+        @keyframes floatOrb1 {
+            0% { transform: translate(-20px, -15px) scale(0.95); }
+            100% { transform: translate(35px, 25px) scale(1.12); }
+        }
+        @keyframes floatOrb2 {
+            0% { transform: translate(20px, 15px) scale(1.05); }
+            100% { transform: translate(-35px, -25px) scale(0.92); }
+        }
+
+        #fxCanvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* کادر HUD مهندسی دور صفحه */
+        .hud-perimeter {
+            position: fixed;
+            top: max(14px, env(safe-area-inset-top, 14px));
+            bottom: max(14px, env(safe-area-inset-bottom, 14px));
+            left: 14px;
+            right: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 24px;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .hud-corner-text {
+            position: fixed;
+            font-family: 'Chakra Petch', sans-serif;
+            font-size: 10px;
+            letter-spacing: 2.5px;
+            color: rgba(255, 255, 255, 0.24);
+            z-index: 6;
+            pointer-events: none;
+        }
+        .hud-tl { top: 28px; left: 32px; }
+        .hud-tr { top: 28px; right: 32px; }
+
+        /* لایه مرکزی */
+        .center-viewport {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            perspective: 1100px;
+            -webkit-perspective: 1100px;
+            z-index: 10;
+            padding: 20px;
+        }
+
+        .stage-3d {
+            width: 100%;
+            max-width: 650px;
+            will-change: transform;
+            animation: cardFadeIn 0.8s ease-out;
+        }
+
+        @keyframes cardFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* بدنه اصلی کارت شیشه دودی مشکی (Smoked Obsidian Liquid Glass) */
+        .liquid-card {
+            position: relative;
+            padding: 66px 44px;
+            border-radius: 34px;
+            overflow: hidden;
+            text-align: center;
+            background: linear-gradient(
+                145deg,
+                rgba(10, 14, 20, 0.74) 0%,
+                rgba(5, 7, 11, 0.82) 50%,
+                rgba(8, 11, 16, 0.76) 100%
+            );
+            backdrop-filter: blur(26px) saturate(175%) contrast(112%) brightness(0.82);
+            -webkit-backdrop-filter: blur(26px) saturate(175%) contrast(112%) brightness(0.82);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-top: 1px solid rgba(255, 255, 255, 0.14);
+            box-shadow:
+                0 45px 100px -18px rgba(0, 0, 0, 0.96),
+                0 0 0 1px rgba(0, 0, 0, 0.7),
+                inset 0 1px 1px 0 rgba(255, 255, 255, 0.12),
+                inset 0 -1px 2px 0 rgba(0, 0, 0, 0.85),
+                inset 0 0 45px rgba(0, 0, 0, 0.55);
+        }
+
+        /* لایه شکست نور مایع تیره در لبه شیشه */
+        .liquid-distortion-rim {
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 12px;
+            backdrop-filter: blur(6px) brightness(0.95) saturate(190%);
+            -webkit-backdrop-filter: blur(6px) brightness(0.95) saturate(190%);
+            filter: url(#liquidRefract);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+            opacity: 0.75;
+        }
+
+        /* بازتاب شیشه صیقلی مشکی (بسیار ظریف و بدون سفیدی) */
+        .liquid-caustic {
+            position: absolute;
+            inset: -20%;
+            background: 
+                radial-gradient(ellipse 65% 40% at 25% 15%, rgba(255, 255, 255, 0.055), transparent 60%),
+                radial-gradient(ellipse 50% 35% at 80% 88%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 60%);
+            pointer-events: none;
+        }
+
+        /* بازتاب نور متحرک با موس روی شیشه دودی */
+        .specular-sheen {
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(
+                380px circle at var(--mx, 50%) var(--my, 50%),
+                color-mix(in srgb, var(--accent) 10%, rgba(255, 255, 255, 0.05)),
+                transparent 62%
+            );
+            pointer-events: none;
+        }
+
+        /* حلقه نورانی رنگی لبه کارت هنگام حرکت موس (بدون لبه سفید) */
+        .rim-light {
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            padding: 1px;
+            background: radial-gradient(
+                280px circle at var(--mx, 50%) var(--my, 50%),
+                color-mix(in srgb, var(--accent) 75%, transparent),
+                color-mix(in srgb, var(--accent) 20%, transparent) 45%,
+                transparent 70%
+            );
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        /* لایه نقشه مهندسی (X-Ray Blueprint) */
+        .xray-blueprint {
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background-image:
+                linear-gradient(color-mix(in srgb, var(--accent) 22%, transparent) 1px, transparent 1px),
+                linear-gradient(90deg, color-mix(in srgb, var(--accent) 22%, transparent) 1px, transparent 1px),
+                radial-gradient(circle at 50% 50%, transparent 60%, color-mix(in srgb, var(--accent) 16%, transparent) 61%, transparent 62%);
+            background-size: 26px 26px, 26px 26px, 100% 100%;
+            mask-image: radial-gradient(200px circle at var(--mx, 50%) var(--my, 50%), black 0%, transparent 100%);
+            -webkit-mask-image: radial-gradient(200px circle at var(--mx, 50%) var(--my, 50%), black 0%, transparent 100%);
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            opacity: 0.9;
+        }
+
+        body.xray-locked .xray-blueprint {
+            mask-image: none;
+            -webkit-mask-image: none;
+            opacity: 0.32;
+        }
+
+        /* خط اسکن لیزری */
+        .scan-beam {
+            position: absolute;
+            left: 8%;
+            right: 8%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            box-shadow: 0 0 14px var(--accent);
+            opacity: 0;
+            pointer-events: none;
+            animation: laserSweep 2.6s cubic-bezier(0.4, 0, 0.2, 1) 0.2s forwards;
+        }
+
+        @keyframes laserSweep {
+            0% { top: 8%; opacity: 0; }
+            20% { opacity: 0.85; }
+            80% { opacity: 0.85; }
+            100% { top: 92%; opacity: 0; }
+        }
+
+        /* پرچ‌های تیره فلزی گوشه کانتینر */
+        .rivet {
+            position: absolute;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.25), rgba(0,0,0,0.9));
+            border: 1px solid rgba(255,255,255,0.07);
+        }
+        .r-tl { top: 20px; left: 20px; }
+        .r-tr { top: 20px; right: 20px; }
+        .r-bl { bottom: 20px; left: 20px; }
+        .r-br { bottom: 20px; right: 20px; }
+
+        /* محتوای داخلی کارت */
+        .card-content {
+            position: relative;
+            z-index: 4;
+            will-change: transform;
+        }
+
+        .z-spec {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-family: 'Chakra Petch', sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            margin-bottom: 26px;
+        }
+
+        .z-spec::before,
+        .z-spec::after {
+            content: "";
+            width: 20px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.28), transparent);
+        }
+
+        .z-title-fa {
+            font-size: clamp(2.6rem, 9.5vw, 4.9rem);
+            font-weight: 900;
+            line-height: 1.15;
+            letter-spacing: -1.5px;
+            background: linear-gradient(180deg, #ffffff 35%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.85));
+            margin-bottom: 10px;
+        }
+
+        .z-title-en {
+            font-family: 'Chakra Petch', sans-serif;
+            font-size: clamp(1rem, 3.6vw, 1.55rem);
+            font-weight: 700;
+            letter-spacing: 12px;
+            margin-right: -12px;
+            color: rgba(241, 245, 249, 0.85);
+            text-transform: uppercase;
+            margin-bottom: 40px;
+            text-shadow: 0 4px 16px rgba(0, 0, 0, 0.7);
+        }
+
+        /* کپسول وضعیت مشکی شیشه‌ای */
+        .z-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 26px;
+            background: rgba(5, 8, 12, 0.72);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-top: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 100px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: #f8fafc;
+            box-shadow:
+                0 12px 28px rgba(0, 0, 0, 0.65),
+                inset 0 1px 1px rgba(255, 255, 255, 0.08);
+        }
+
+        /* نشانگر SVG کاملاً هم‌مرکز */
+        .beacon-svg {
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+            overflow: visible;
+        }
+
+        .beacon-ring {
+            fill: none;
+            stroke: var(--accent);
+            stroke-width: 1.6;
+            transform-box: fill-box;
+            transform-origin: center;
+            animation: svgSonar 2.2s infinite cubic-bezier(0.2, 0.6, 0.3, 1);
+        }
+
+        .beacon-core {
+            fill: var(--accent);
+            filter: drop-shadow(0 0 6px var(--accent));
+            transition: fill 0.6s ease;
+        }
+
+        @keyframes svgSonar {
+            0% {
+                transform: scale(1);
+                opacity: 0.95;
+            }
+            100% {
+                transform: scale(2.6);
+                opacity: 0;
+            }
+        }
+
+        /* داک شناور مشکی شیشه‌ای پایین صفحه */
+        .control-dock {
+            position: fixed;
+            bottom: max(28px, calc(env(safe-area-inset-bottom, 14px) + 14px));
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 10px 22px;
+            background: rgba(6, 9, 14, 0.78);
+            backdrop-filter: blur(26px) saturate(180%);
+            -webkit-backdrop-filter: blur(26px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-top: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 100px;
+            box-shadow: 
+                0 20px 50px rgba(0, 0, 0, 0.85),
+                inset 0 1px 1px rgba(255, 255, 255, 0.08);
+            z-index: 30;
+            white-space: nowrap;
+        }
+
+        .dock-item {
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.76);
+            text-decoration: none;
+            font-family: 'Vazirmatn', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 4px 6px;
+            transition: color 0.25s ease, text-shadow 0.25s ease;
+        }
+
+        .dock-item:hover, .dock-item:active {
+            color: #ffffff;
+            text-shadow: 0 0 14px var(--accent);
+        }
+
+        .dock-item.active {
+            color: var(--accent);
+        }
+
+        .sep {
+            width: 3px;
+            height: 3px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.22);
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 600px) {
+            .hud-perimeter {
+                top: max(10px, env(safe-area-inset-top, 10px));
+                bottom: max(10px, env(safe-area-inset-bottom, 10px));
+                left: 10px;
+                right: 10px;
+                border-radius: 22px;
+            }
+            .hud-tl {
+                top: max(22px, calc(env(safe-area-inset-top, 10px) + 12px));
+                left: 24px;
+                font-size: 8.5px;
+                letter-spacing: 1.8px;
+            }
+            .hud-tr {
+                display: none;
+            }
+            .center-viewport {
+                padding: 18px 18px 84px 18px;
+            }
+            .liquid-card {
+                padding: 54px 22px;
+                border-radius: 28px;
+            }
+            .z-spec {
+                font-size: 9.5px;
+                letter-spacing: 2.2px;
+                margin-bottom: 22px;
+            }
+            .z-spec::before, .z-spec::after {
+                width: 14px;
+            }
+            .z-title-fa {
+                margin-bottom: 8px;
+            }
+            .z-title-en {
+                letter-spacing: 8px;
+                margin-right: -8px;
+                margin-bottom: 34px;
+            }
+            .z-status {
+                padding: 10px 24px;
+                font-size: 0.9rem;
+            }
+            .rivet {
+                width: 5.5px;
+                height: 5.5px;
+            }
+            .r-tl { top: 16px; left: 16px; }
+            .r-tr { top: 16px; right: 16px; }
+            .r-bl { bottom: 16px; left: 16px; }
+            .r-br { bottom: 16px; right: 16px; }
+            .control-dock {
+                bottom: max(22px, calc(env(safe-area-inset-bottom, 10px) + 12px));
+                width: calc(100% - 36px);
+                max-width: 390px;
+                justify-content: space-between;
+                gap: 4px;
+                padding: 10px 16px;
+            }
+            .dock-item {
+                font-size: 0.76rem;
+                padding: 4px 4px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <svg style="position: absolute; width: 0; height: 0; pointer-events: none;" aria-hidden="true">
+        <defs>
+            <filter id="liquidRefract" x="-10%" y="-10%" width="120%" height="120%">
+                <feTurbulence type="fractalNoise" baseFrequency="0.015 0.025" numOctaves="2" seed="3" result="noise"/>
+                <feDisplacementMap in="SourceGraphic" in2="noise" scale="16" xChannelSelector="R" yChannelSelector="G"/>
+            </filter>
+        </defs>
+    </svg>
+
+    <div class="world-backdrop" id="worldLayer">
+        <div class="ambient-aura"></div>
+        <div class="corrugated-wall"></div>
+        <div class="liquid-orb orb-1"></div>
+        <div class="liquid-orb orb-2"></div>
+    </div>
+
+    <canvas id="fxCanvas"></canvas>
+
+    <div class="hud-perimeter"></div>
+    <div class="hud-corner-text hud-tl">ISO-668 // CONTAINER SERIES</div>
+    <div class="hud-corner-text hud-tr" id="coordReadout">X: 000 Y: 000</div>
+
+    <div class="center-viewport">
+        <div class="stage-3d" id="stage3d">
+            <main class="liquid-card" id="monolithCard">
+                <div class="liquid-distortion-rim"></div>
+                <div class="liquid-caustic"></div>
+                <div class="xray-blueprint"></div>
+                <div class="rim-light"></div>
+                <div class="specular-sheen"></div>
+                <div class="scan-beam"></div>
+
+                <span class="rivet r-tl"></span>
+                <span class="rivet r-tr"></span>
+                <span class="rivet r-bl"></span>
+                <span class="rivet r-br"></span>
+
+                <div class="card-content" id="cardContent">
+                    <div class="z-spec">INDUSTRIAL ARCHITECTURE</div>
+                    <h1 class="z-title-fa">باکس اسپرت</h1>
+                    <div class="z-title-en">BOX SPORT</div>
+
+                    <div class="z-status">
+                        <svg class="beacon-svg" viewBox="0 0 24 24">
+                            <circle class="beacon-ring" cx="12" cy="12" r="4"></circle>
+                            <circle class="beacon-core" cx="12" cy="12" r="4"></circle>
+                        </svg>
+                        <span>به‌زودی...</span>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <nav class="control-dock">
+        <a href="https://instagram.com" target="_blank" rel="noopener" class="dock-item">اینستاگرام</a>
+        <span class="sep"></span>
+        <a href="https://t.me" target="_blank" rel="noopener" class="dock-item">تلگرام</a>
+        <span class="sep"></span>
+        <button class="dock-item" id="xrayBtn">نقشه مهندسی</button>
+        <span class="sep"></span>
+        <button class="dock-item" id="lightBtn">نور: فیروزه‌ای</button>
+    </nav>
+
+    <script>
+        const stage = document.getElementById('stage3d');
+        const card = document.getElementById('monolithCard');
+        const content = document.getElementById('cardContent');
+        const world = document.getElementById('worldLayer');
+        const coordReadout = document.getElementById('coordReadout');
+
+        const isPrimaryTouch = window.matchMedia('(pointer: coarse)').matches;
+        const isSmallScreen = window.innerWidth <= 600;
+
+        let targetRx = 0, targetRy = 0, currRx = 0, currRy = 0;
+        let targetPx = 0, targetPy = 0, currPx = 0, currPy = 0;
+        let pointerVel = 0;
+        let lastX = window.innerWidth / 2, lastY = window.innerHeight / 2;
+
+        let isUserTouching = false;
+        let idleTimer = null;
+        let ambientClock = 0;
+
+        function setLightSpot(clientX, clientY) {
+            const rect = card.getBoundingClientRect();
+            const localX = clientX - rect.left;
+            const localY = clientY - rect.top;
+            card.style.setProperty('--mx', `${localX.toFixed(1)}px`);
+            card.style.setProperty('--my', `${localY.toFixed(1)}px`);
+        }
+
+        function handlePointer(clientX, clientY) {
+            const nx = (clientX / window.innerWidth) - 0.5;
+            const ny = (clientY / window.innerHeight) - 0.5;
+
+            const dx = clientX - lastX;
+            const dy = clientY - lastY;
+            pointerVel = Math.min(Math.hypot(dx, dy) * 0.12, 6);
+            lastX = clientX;
+            lastY = clientY;
+
+            const maxTilt = isSmallScreen ? 16 : 18;
+            targetRy = nx * maxTilt;
+            targetRx = -ny * maxTilt;
+
+            targetPx = -nx * 42;
+            targetPy = -ny * 42;
+
+            setLightSpot(clientX, clientY);
+
+            if (coordReadout) {
+                const cx = String(Math.round(clientX)).padStart(3, '0');
+                const cy = String(Math.round(clientY)).padStart(3, '0');
+                coordReadout.textContent = `X: ${cx} Y: ${cy}`;
+            }
+        }
+
+        document.addEventListener('mousemove', (e) => {
+            isUserTouching = false;
+            handlePointer(e.clientX, e.clientY);
+        });
+
+        document.addEventListener('mouseleave', () => {
+            targetRx = 0;
+            targetRy = 0;
+            targetPx = 0;
+            targetPy = 0;
+        });
+
+        document.addEventListener('touchstart', (e) => {
+            isUserTouching = true;
+            clearTimeout(idleTimer);
+            if (e.touches.length > 0) {
+                lastX = e.touches[0].clientX;
+                lastY = e.touches[0].clientY;
+                handlePointer(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchmove', (e) => {
+            isUserTouching = true;
+            clearTimeout(idleTimer);
+            if (e.touches.length > 0) {
+                handlePointer(e.touches[0].clientX, e.touches[0].clientY);
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', () => {
+            idleTimer = setTimeout(() => {
+                isUserTouching = false;
+            }, 900);
+        });
+
+        function loopPhysics() {
+            if (isPrimaryTouch && !isUserTouching) {
+                ambientClock += 0.018;
+                const autoNx = Math.sin(ambientClock) * 0.32;
+                const autoNy = Math.cos(ambientClock * 0.75) * 0.28;
+
+                targetRy = autoNx * 15;
+                targetRx = -autoNy * 15;
+                targetPx = -autoNx * 32;
+                targetPy = -autoNy * 32;
+
+                const rect = card.getBoundingClientRect();
+                const autoX = rect.left + rect.width * (0.5 + autoNx * 1.15);
+                const autoY = rect.top + rect.height * (0.5 + autoNy * 1.15);
+                setLightSpot(autoX, autoY);
+            }
+
+            currRx += (targetRx - currRx) * 0.08;
+            currRy += (targetRy - currRy) * 0.08;
+            currPx += (targetPx - currPx) * 0.06;
+            currPy += (targetPy - currPy) * 0.06;
+            pointerVel *= 0.92;
+
+            stage.style.transform = `rotateX(${currRx.toFixed(2)}deg) rotateY(${currRy.toFixed(2)}deg)`;
+            content.style.transform = `translate3d(${(currRy * 0.55).toFixed(1)}px, ${(-currRx * 0.55).toFixed(1)}px, 0)`;
+            world.style.transform = `translate3d(${currPx.toFixed(1)}px, ${currPy.toFixed(1)}px, 0) scale(1.08)`;
+
+            requestAnimationFrame(loopPhysics);
+        }
+        loopPhysics();
+
+        const xrayBtn = document.getElementById('xrayBtn');
+        xrayBtn.addEventListener('click', () => {
+            document.body.classList.toggle('xray-locked');
+            xrayBtn.classList.toggle('active');
+        });
+
+        const modes = [
+            { id: '', label: 'نور: فیروزه‌ای', rgb: '0, 229, 255' },
+            { id: 'forge', label: 'نور: کوره جوش', rgb: '255, 106, 0' },
+            { id: 'stealth', label: 'نور: تیتانیوم', rgb: '148, 163, 184' }
+        ];
+        let modeIdx = 0;
+        const lightBtn = document.getElementById('lightBtn');
+
+        lightBtn.addEventListener('click', () => {
+            modeIdx = (modeIdx + 1) % modes.length;
+            const current = modes[modeIdx];
+            if (current.id) {
+                document.body.setAttribute('data-mode', current.id);
+            } else {
+                document.body.removeAttribute('data-mode');
+            }
+            lightBtn.textContent = current.label;
+        });
+
+        const canvas = document.getElementById('fxCanvas');
+        const ctx = canvas.getContext('2d');
+        let sparks = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const sparkCount = isSmallScreen ? 22 : 34;
+        for (let i = 0; i < sparkCount; i++) {
+            sparks.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 1.6 + 0.4,
+                speedY: -(Math.random() * 0.38 + 0.12),
+                speedX: (Math.random() - 0.5) * 0.22,
+                alpha: Math.random() * 0.55 + 0.15
+            });
+        }
+
+        function renderCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const rgb = modes[modeIdx].rgb;
+
+            sparks.forEach(s => {
+                s.y += s.speedY * (1 + pointerVel * 0.35);
+                s.x += s.speedX + (currRy * 0.025);
+
+                if (s.y < -10) s.y = canvas.height + 10;
+                if (s.x < -10) s.x = canvas.width + 10;
+                if (s.x > canvas.width + 10) s.x = -10;
+
+                ctx.fillStyle = `rgba(${rgb}, ${s.alpha})`;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            requestAnimationFrame(renderCanvas);
+        }
+        renderCanvas();
+    </script>
+</body>
+</html>
